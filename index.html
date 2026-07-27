@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HoneySec — Threat Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="abox">
+    <div class="a-logo">🛡 HONEYSEC</div>
+    <div class="a-sub">// THREAT INTELLIGENCE PLATFORM //</div>
+    <div class="a-field">
+      <label class="a-lbl">OPERATOR ID</label>
+      <input class="a-inp" id="au" placeholder="Enter username" autocomplete="off">
+      <div class="fe" id="eu"></div>
+    </div>
+    <div class="a-field">
+      <label class="a-lbl">ACCESS KEY</label>
+      <input class="a-inp" id="ap" type="password" placeholder="Enter password" autocomplete="off">
+      <div class="fe" id="ep"></div>
+    </div>
+    <button class="a-btn" onclick="doLogin()"><span>AUTHENTICATE</span></button>
+    <div class="a-err" id="aerr"></div>
+    <div class="a-hint">DEMO: admin / honey123</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="t-logo"><div class="dot"></div>HONEYSEC</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text2)">
+      <span id="clk"></span> &nbsp;|&nbsp; HONEYPOT: 192.168.1.254 &nbsp;|&nbsp; <span style="color:var(--green)">● ACTIVE</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="tbadge" id="tbadge">THREAT: HIGH</div>
+      <button class="lgout" onclick="doLogout()">LOGOUT</button>
+    </div>
+  </div>
+
+  <div id="abar">
+    <div class="abar-inner">
+      <span class="aicon">⚠</span>
+      <span class="atxt" id="atxt">CRITICAL: Mass brute force attack detected</span>
+      <button class="aclose" onclick="closeAlert()">✕</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sb">
+      <div class="ntitle">MAIN</div>
+      <div class="ni on" onclick="nav('dashboard',this)"><span>⬡</span> Dashboard</div>
+      <div class="ni" onclick="nav('attacks',this)"><span>⚔</span> Attack Data <span class="nbadge" id="nbatk">12</span></div>
+      <div class="ni" onclick="nav('timeline',this)"><span>◷</span> Time Analysis</div>
+      <div class="ni" onclick="nav('analytics',this)"><span>◈</span> Analytics</div>
+      <div class="ntitle">SECURITY</div>
+      <div class="ni" onclick="nav('alerts',this)"><span>🔔</span> Alerts <span class="nbadge" id="nbalr">3</span></div>
+      <div class="ni" onclick="nav('errors',this)"><span>⛔</span> Error Detection</div>
+      <div class="ntitle">TOOLS</div>
+      <div class="ni" onclick="nav('report',this)"><span>✎</span> Add Report</div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="sec on" id="s-dashboard">
+        <div class="sec-hdr">
+          <div class="sec-ttl">THREAT OVERVIEW</div>
+          <button class="simb" onclick="simAttack()">⚡ SIMULATE ATTACK</button>
+        </div>
+        <div class="sg">
+          <div class="sc c"><div class="slbl">Total Events</div><div class="sval" id="sv-tot">2,847</div><div class="sdlt">↑ +147 today</div></div>
+          <div class="sc r"><div class="slbl">Malware</div><div class="sval" id="sv-mal">483</div><div class="sdlt">↑ +23 today</div></div>
+          <div class="sc o"><div class="slbl">Brute Force</div><div class="sval" id="sv-bru">671</div><div class="sdlt">↑ +51 today</div></div>
+          <div class="sc y"><div class="slbl">Net Scans</div><div class="sval" id="sv-scn">592</div><div class="sdlt">↑ +33 today</div></div>
+          <div class="sc p"><div class="slbl">Phishing</div><div class="sval" id="sv-phi">284</div><div class="sdlt">↑ +12 today</div></div>
+          <div class="sc g"><div class="slbl">Bot Attacks</div><div class="sval" id="sv-bot">374</div><div class="sdlt">↑ +28 today</div></div>
+        </div>
+        <div class="gbig">
+          <div class="panel"><div class="ptitle">24-HOUR ATTACK FREQUENCY</div><div class="cwl"><canvas id="ch-hourly"></canvas></div></div>
+          <div class="panel"><div class="ptitle">THREAT DISTRIBUTION</div><div class="cwl"><canvas id="ch-donut"></canvas></div></div>
+        </div>
+        <div class="g3">
+          <div class="panel"><div class="ptitle">THREAT INTENSITY</div><div id="tbars"></div></div>
+          <div class="panel"><div class="ptitle">TOP ATTACKER IPs</div><div class="ipl" id="iplist"></div></div>
+          <div class="panel"><div class="ptitle">LIVE EVENT FEED</div><div class="tl" id="livefeed"></div></div>
+        </div>
+      </div>
+
+      <!-- ATTACKS -->
+      <div class="sec" id="s-attacks">
+        <div class="sec-hdr">
+          <div class="sec-ttl">ATTACK DATABASE</div>
+          <div style="display:flex;gap:10px">
+            <select class="fsel" id="ft" style="width:160px" onchange="filterTbl()">
+              <option value="">ALL TYPES</option>
+              <option>Malware</option><option>Brute Force</option><option>Network Scan</option>
+              <option>Phishing</option><option>Unauthorized</option><option>Bot</option>
+            </select>
+            <select class="fsel" id="fs" style="width:140px" onchange="filterTbl()">
+              <option value="">ALL SEVERITY</option>
+              <option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ptitle">HONEYPOT EVENTS — <span id="atkcnt" style="color:var(--text1)">50</span> RECORDS</div>
+          <div style="overflow-x:auto">
+            <table class="dt">
+              <thead><tr>
+                <th>#</th><th>TIMESTAMP</th><th>TYPE</th><th>SOURCE IP</th>
+                <th>COUNTRY</th><th>PORT</th><th>SEVERITY</th><th>PAYLOAD</th><th>STATUS</th>
+              </tr></thead>
+              <tbody id="atktbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="sec" id="s-timeline">
+        <div class="sec-hdr"><div class="sec-ttl">TIME ANALYSIS</div></div>
+        <div class="g2">
+          <div class="panel"><div class="ptitle">ATTACKS BY HOUR</div><div class="cwl"><canvas id="ch-hour"></canvas></div></div>
+          <div class="panel"><div class="ptitle">ATTACKS BY DAY</div><div class="cwl"><canvas id="ch-day"></canvas></div></div>
+        </div>
+        <div class="g2">
+          <div class="panel"><div class="ptitle">7-DAY TREND BY TYPE</div><div class="cwl"><canvas id="ch-trend"></canvas></div></div>
+          <div class="panel"><div class="ptitle">ATTACK VELOCITY (60 MIN)</div><div class="cwl"><canvas id="ch-vel"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="sec" id="s-analytics">
+        <div class="sec-hdr"><div class="sec-ttl">DATA ANALYTICS</div></div>
+        <div class="g3">
+          <div class="panel"><div class="ptitle">ATTACK VECTOR</div><div class="cw"><canvas id="ch-vec"></canvas></div></div>
+          <div class="panel"><div class="ptitle">PORT TARGETING</div><div class="cw"><canvas id="ch-port"></canvas></div></div>
+          <div class="panel"><div class="ptitle">SEVERITY SPLIT</div><div class="cw"><canvas id="ch-sev"></canvas></div></div>
+        </div>
+        <div class="panel">
+          <div class="ptitle">THREAT CORRELATION MATRIX</div>
+          <div id="cmat" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px"></div>
+        </div>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="sec" id="s-alerts">
+        <div class="sec-hdr">
+          <div class="sec-ttl">ALERT MANAGEMENT</div>
+          <button class="simb" onclick="addAlertRand()">+ RANDOM ALERT</button>
+        </div>
+        <div class="g2">
+          <div class="panel"><div class="ptitle">ACTIVE ALERTS</div><div class="alist" id="alist"></div></div>
+          <div class="panel">
+            <div class="ptitle">CREATE CUSTOM ALERT</div>
+            <div class="fgrid">
+              <div>
+                <label class="flbl">Alert Type</label>
+                <select class="fsel" id="altype">
+                  <option>Malware Detected</option><option>Brute Force</option><option>Network Scan</option>
+                  <option>Phishing Attempt</option><option>Unauthorized Access</option><option>Bot Activity</option>
+                </select>
+              </div>
+              <div>
+                <label class="flbl">Severity</label>
+                <select class="fsel" id="alsev"><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option></select>
+              </div>
+              <div class="ffull">
+                <label class="flbl">Source IP</label>
+                <input class="finp" id="alip" placeholder="e.g. 192.168.1.100">
+              </div>
+              <div class="ffull">
+                <label class="flbl">Description</label>
+                <input class="finp" id="aldesc" placeholder="Alert description...">
+              </div>
+            </div>
+            <div style="margin-top:16px"><button class="btnp" onclick="createAlert()"><span>CREATE ALERT</span></button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERRORS -->
+      <div class="sec" id="s-errors">
+        <div class="sec-hdr"><div class="sec-ttl">ERROR DETECTION</div></div>
+        <div class="egrid">
+          <div class="ecard"><div class="ecode">401</div><div class="edesc">UNAUTHORIZED</div><div class="ecount" id="e401">284</div></div>
+          <div class="ecard"><div class="ecode">403</div><div class="edesc">FORBIDDEN</div><div class="ecount" id="e403">192</div></div>
+          <div class="ecard"><div class="ecode">404</div><div class="edesc">NOT FOUND</div><div class="ecount" id="e404">531</div></div>
+          <div class="ecard"><div class="ecode">500</div><div class="edesc">SERVER ERR</div><div class="ecount" id="e500">47</div></div>
+        </div>
+        <div class="g2">
+          <div class="panel"><div class="ptitle">ERROR TREND (7 DAYS)</div><div class="cwl"><canvas id="ch-err"></canvas></div></div>
+          <div class="panel"><div class="ptitle">ANOMALY LOG</div>
+            <table class="dt">
+              <thead><tr><th>TIME</th><th>ANOMALY</th><th>SCORE</th><th>STATUS</th></tr></thead>
+              <tbody id="anomtb"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT -->
+      <div class="sec" id="s-report">
+        <div class="sec-hdr"><div class="sec-ttl">ADD INCIDENT REPORT</div></div>
+        <div class="panel">
+          <div class="ptitle">INCIDENT DETAILS — LIVE VALIDATION</div>
+          <div class="fgrid">
+            <div>
+              <label class="flbl">INCIDENT ID</label>
+              <input class="finp" id="fi" placeholder="INC-XXXX" oninput="vf(this,'id')">
+              <div class="fe" id="ei"></div>
+            </div>
+            <div>
+              <label class="flbl">ATTACK TYPE</label>
+              <select class="fsel" id="ftype">
+                <option value="">-- SELECT --</option>
+                <option>Malware</option><option>Brute Force</option><option>Network Scan</option>
+                <option>Phishing</option><option>Unauthorized Access</option><option>Bot Attack</option>
+              </select>
+              <div class="fe" id="etype"></div>
+            </div>
+            <div>
+              <label class="flbl">SOURCE IP</label>
+              <input class="finp" id="fip" placeholder="xxx.xxx.xxx.xxx" oninput="vf(this,'ip')">
+              <div class="fe" id="eip"></div>
+            </div>
+            <div>
+              <label class="flbl">TARGET PORT</label>
+              <input class="finp" id="fport" type="number" placeholder="0–65535" oninput="vf(this,'port')">
+              <div class="fe" id="eport"></div>
+            </div>
+            <div>
+              <label class="flbl">SEVERITY</label>
+              <select class="fsel" id="fsev">
+                <option value="">-- SELECT --</option>
+                <option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+              </select>
+              <div class="fe" id="esev"></div>
+            </div>
+            <div>
+              <label class="flbl">DETECTION TIME</label>
+              <input class="finp" id="ftime" type="datetime-local" oninput="vf(this,'time')">
+              <div class="fe" id="etime"></div>
+            </div>
+            <div class="ffull">
+              <label class="flbl">PAYLOAD / DESCRIPTION</label>
+              <input class="finp" id="fpay" placeholder="Describe attack payload or behavior (min 10 chars)..." oninput="vf(this,'payload')">
+              <div class="fe" id="epay"></div>
+            </div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:12px;align-items:center">
+            <button class="btnp" onclick="submitRep()"><span>SUBMIT REPORT</span></button>
+            <button class="btnd" onclick="clearForm()">CLEAR FORM</button>
+          </div>
+          <div class="fsuc" id="fsuc">✓ INCIDENT LOGGED — ID: <span id="sucid"></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
